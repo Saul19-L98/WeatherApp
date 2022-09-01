@@ -4,6 +4,7 @@ import { url,urlcity } from "./setting.js";
 
 //Memory
 let citiesArr = [];
+let citiesErrors = [];
 
 //Your location button view
 const intructionsButton = document.querySelector('#intructions-button');
@@ -164,17 +165,27 @@ const cityIsOnMemory = (str) => {
     return citiesArr.includes(str) ? true : false;
 };
 
-const fetchData = async (baseUrl,node) => {
+const cityIsOnErrors = (str) => {
+    return citiesErrors.includes(str) ? true : false;
+} 
+
+const fetchData = async (baseUrl,node,cityName) => {
     try{
-        const dataFromApi = await fetch(baseUrl),
-        information = await dataFromApi.json(),
-        weatherData = information.weather[0],
-        mainData = information.main,
-        cityName = information.name;
+        const dataFromApi = await fetch(baseUrl).then((response) => {
+            if(!response.ok){
+                throw new Error("Data can not be requested 😔");
+            }
+            return response.json();
+        }),
+        weatherData = dataFromApi.weather[0],
+        mainData = dataFromApi.main,
+        cityName = dataFromApi.name;
         createCard(node, weatherData,mainData,cityName);
     }catch (e){
         errorLabel.innerText = 'City name does not exist or is misspelled 👀';
-        console.error(`${e.message} 👀`);
+        searchBar.className = errorClass;
+        citiesErrors.push(cityName);
+        console.error(`${e.message}`);
     }
 }
 
@@ -209,20 +220,25 @@ searchSubmit.addEventListener('click', (e) => {
         errorMessages.push('Numbers are not allowed 👀');
     }
 
-    if(cityIsOnMemory(cityName)){
+    if(cityIsOnErrors(cityName)){
+        errorMessages.push('This city not exist 🤔');
+    }else if(cityIsOnMemory(cityName)){
         errorMessages.push('City is already displayed 👀');
     }
     
     if(errorMessages.length === 0 && countryNameMatch(cityName) ){
-        errorLabel.innerText = '';
-        searchBar.className = noErrorClass;
-        citiesArr.push(cityName);
-        const cityWeatherUrl = urlcity.replace('{city_name}',cityName).replace(' ','%20');
-        fetchData(cityWeatherUrl,cardsGrid);
-        searchBar.value = '';
+        try{
+            errorLabel.innerText = '';
+            searchBar.className = noErrorClass;
+            citiesArr.push(cityName);
+            const cityWeatherUrl = urlcity.replace('{city_name}',cityName).replace(' ','%20');
+            fetchData(cityWeatherUrl,cardsGrid,cityName);
+            searchBar.value = '';
+        }catch(e){
+            console.error(e.message);
+        }
     }else{
         e.preventDefault();
-        //searchBar.className = '';
         searchBar.className = errorClass;
         errorLabel.innerText = errorMessages.join(', ');
     }
