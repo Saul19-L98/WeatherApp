@@ -21,8 +21,11 @@ const searchSubmit = document.querySelector('#search__submit');
 const errorLabel = document.querySelector('#error_label');
 
 //Classes for search bar
-const errorClass = 'w-3/4 ring-red-500 ring-2 rounded-lg border-transparent appearance-none border border-gray-300 py-2 px-4 bg-white text-gray-700 placeholder-gray-400 shadow-sm text-base focus:outline-none focus:ring-2 focus:ring-purple-600 focus:border-transparent';
+const errorClass = 'w-3/4 ring-red-500 ring-2 rounded-lg border-transparent appearance-none border border-gray-300 py-2 px-4 bg-white text-gray-700 placeholder-gray-400 shadow-sm text-base focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent';
 const noErrorClass = 'w-3/4 ring-blue-500 ring-2 rounded-lg border-transparent appearance-none border border-gray-300 py-2 px-4 bg-white text-gray-700 placeholder-gray-400 shadow-sm text-base focus:outline-none focus:ring-2 focus:ring-purple-600 focus:border-transparent';
+
+//Classes for the grid displayer.
+const gridSearch = 'mt-10 mb-20 grid grid-cols-1 sm:grid-cols-2 gap-2 md:grid-cols-2 gap-3 lg:grid-cols-3 gap-4 xl:grid-cols-4 gap-5';
 
 //Modal elements.
 ////////////////////////////////////////////////////////////////////////////////////////////
@@ -73,16 +76,24 @@ const toggleModel = (node) => {
 }
 
 //Creating a card.
-const createCard = (node,weatherData,mainData,cityName) => {
+const createCard = (node,weatherData,mainData,cityName,countryData) => {
 
     const card = document.createElement('div');
     card.className = 'cursor-pointer p-5 w-auto bg-blue-200 bg-blue-100 rounded-lg text-left overflow-hidden shadow-xl shadow-blue-800 transform transition-all hover:bg-blue-500';
     
     const cardFlex = document.createElement('div');
-    cardFlex.className = 'flex gap-2 flex-col content-center';
+    cardFlex.className = 'flex gap-2 flex-col items-center';
     
     const cardImageCont = document.createElement('div');
     cardImageCont.className = 'w-auto mx-auto';
+
+    //|==> Country code.
+    const cardCountryNameCont = document.createElement('div');
+    cardCountryNameCont.className = 'w-1/4 bg-yellow-500 rounded-lg flex gap-2 justify-center';
+
+    const cardCountryName = document.createElement('h4');
+    cardCountryName.className = 'text-center ';
+    cardCountryName.innerText = `${countryData.country}`;
     
     //|==> Titile
     const cardTitleContainer = document.createElement('div');
@@ -114,12 +125,13 @@ const createCard = (node,weatherData,mainData,cityName) => {
     cardInformationTemperatureSpan.innerText = '°C';
 
     //Append to the dom.
-    const containersFlex = [cardTitleContainer,cardImageCont,cardInformation];
+    const containersFlex = [cardCountryNameCont,cardTitleContainer,cardImageCont,cardInformation];
     const contentSecondContainer = [cardInformationTitle,cardInformationtTemperature];
 
     node.appendChild(card);
     card.appendChild(cardFlex);
     cardFlex.append(...containersFlex);
+    cardCountryNameCont.appendChild(cardCountryName);
     cardTitleContainer.appendChild(cardTitle);
     cardImageCont.appendChild(cardImage);
     cardInformation.appendChild(cardInformationFlex);
@@ -179,8 +191,9 @@ const fetchData = async (baseUrl,node,cityName) => {
         }),
         weatherData = dataFromApi.weather[0],
         mainData = dataFromApi.main,
-        cityName = dataFromApi.name;
-        createCard(node, weatherData,mainData,cityName);
+        cityName = dataFromApi.name,
+        countryData = dataFromApi.sys;
+        createCard(node, weatherData,mainData,cityName,countryData);
     }catch (e){
         errorLabel.innerText = 'City name does not exist or is misspelled 👀';
         searchBar.className = errorClass;
@@ -193,8 +206,8 @@ intructionsButton.addEventListener('click', (e) => {
     e.preventDefault();
     if(singleCard.firstChild.nodeName === '#text'){
         if(navigator.geolocation){
-            removeAllChildNodes(singleCard);
             navigator.geolocation.getCurrentPosition((position) => {
+                removeAllChildNodes(singleCard);
                 const lat = position.coords.latitude;
                 const long = position.coords.longitude
                 const strLat = lat.toString();
@@ -228,6 +241,11 @@ searchSubmit.addEventListener('click', (e) => {
     
     if(errorMessages.length === 0 && countryNameMatch(cityName) ){
         try{
+            //console.dir(temporalDiv)
+            if(document.querySelector('#card_grid')){
+                removeAllChildNodes(cardsGrid);
+                cardsGrid.className = gridSearch;
+            }
             errorLabel.innerText = '';
             searchBar.className = noErrorClass;
             citiesArr.push(cityName);
